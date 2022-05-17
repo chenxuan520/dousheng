@@ -66,3 +66,6 @@ func UserMessage(c *gin.Context){
 	}
 	util.SuccUserInfo(c,"ok",user);
 }
+func UserFansAdd(c *gin.Context){
+
+}

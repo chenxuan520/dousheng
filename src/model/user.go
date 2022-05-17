@@ -12,8 +12,8 @@ type User struct{
 	Pwd			string        `bson:"password" json:"password"`
 	FollCount	int			  `bson:"follow_count" json:"follow_conut"`
 	FansCount	int			  `bson:"follower_count" json:"follower_count"`
-	Follower	[]string      `bson:"follower" json:"follower"`
-	Fans		[]string      `bson:"fans" json:"fans"`
+	Follower	[]int		  `bson:"follower" json:"follower"`
+	Fans		[]int         `bson:"fans" json:"fans"`
 	FavVideo	[]int		  `bson:"fav_video" json:"fav_video"`
 	IsFollow	bool		  `bson:"is_follow" json:"is_follow"`
 }
@@ -34,7 +34,7 @@ func UserAdd(user User)error{
 }
 func UserLoginByNamePwd(email,pwd string)(User,error){
 	query:=bson.M{
-		"username":email,
+		"name":email,
 		"password":pwd,
 	}
 	return getUserInfo(query,nil);
@@ -78,4 +78,79 @@ func UserFavList(token string)([]VideoInfo,error){
 			"$in":user.FavVideo,
 		},
 	},nil,100,100);
+}
+
+func UserFansAdd(user_id ,fan_id int)error{
+	err:=changeData(ColUser,bson.M{
+		"id":user_id,
+	},bson.M{
+		"$addToSet":bson.M{
+			"fans":fan_id,
+		},
+	})
+	user,err:=getUserInfo(bson.M{
+		"id":user_id,
+	},nil);
+	num:=len(user.Fans);
+	err=changeData(ColUser,bson.M{
+		"id":user_id,
+	},bson.M{
+		"$set":bson.M{
+			"follower_count":num,
+		},
+	})
+	err=changeData(ColUser,bson.M{
+		"id":fan_id,
+	},bson.M{
+		"$addToSet":bson.M{
+			"follower":fan_id,
+		},
+	})
+	user,err=getUserInfo(bson.M{
+		"id":fan_id,
+	},nil);
+	num=len(user.Fans);
+	err=changeData(ColUser,bson.M{
+		"id":fan_id,
+	},bson.M{
+		"$set":bson.M{
+			"follow_count":num,
+		},
+	})
+	return err;
+}
+func UserFansList(token string)([]User,error){
+	user,err:=UserInfoByID(token);
+	if err!=nil{
+		return []User{},err;
+	}
+	var list []User;
+	for i:=0;i<len(user.Fans);i++{
+		temp,err:=getUserInfo(bson.M{
+			"id":user.Fans[i],
+		},nil)
+		if err!=nil{
+			return []User{},err;
+		}
+		list=append(list,temp);
+	}
+	return list,err;
+}
+func UserFollerList(token string)([]User,error){
+	user,err:=UserInfoByID(token);
+	if err!=nil{
+		return []User{},err;
+	}
+	var list []User;
+	for i:=0;i<len(user.Fans);i++{
+		temp,err:=getUserInfo(bson.M{
+			"id":user.Follower[i],
+		},nil)
+		if err!=nil{
+			return []User{},err;
+		}
+		temp.IsFollow=true;
+		list=append(list,temp);
+	}
+	return list,err;
 }
