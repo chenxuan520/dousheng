@@ -20,6 +20,9 @@ func initWebApi(r *gin.Engine){
 
 	assApi:=r.Group("/douyin/comment");
 	view.InitAssessmentView(assApi);
+
+	relationApi:=r.Group("/douyin/relation");
+	view.InitRelationView(relationApi);
 }
 func main(){
 	r:=gin.Default();

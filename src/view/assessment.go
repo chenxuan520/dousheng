@@ -1,12 +1,13 @@
 package view
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/chenxuan520/dousheng/controller"
+	"github.com/gin-gonic/gin"
 )
-func InitAssessmentView(c *gin.RouterGroup){
+
+func InitAssessmentView(c *gin.RouterGroup) {
 	//commit assessment
-	c.POST("/action/",controller.AssessmentAdd);
+	c.POST("/action/", controller.AssessmentAdd)
 	//get list
-	c.GET("/list/",controller.AssessmentList);
+	c.GET("/list/", controller.AssessmentList)
 }

@@ -1,11 +1,11 @@
 package model
 
 import (
+	"fmt"
+	"github.com/chenxuan520/dousheng/config"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"github.com/chenxuan520/dousheng/config"
 	"time"
-	"fmt"
 )
 
 const (
@@ -13,8 +13,9 @@ const (
 	ColVideo      = "video"
 	ColAssessment = "assessment"
 )
+
 var (
-	DBName =config.GlobalConfig.Mongo.DBname
+	DBName = config.GlobalConfig.Mongo.DBname
 )
 
 func getCollection(col string) (collection *mgo.Collection, cls func()) {
@@ -23,8 +24,7 @@ func getCollection(col string) (collection *mgo.Collection, cls func()) {
 	return c, s.Close
 }
 
-
-func getUserInfo(query,selector interface{})(User,error){
+func getUserInfo(query, selector interface{}) (User, error) {
 	s := mongoSession.Copy()
 	defer s.Close()
 	c := s.DB(DBName).C(ColUser)
@@ -40,7 +40,7 @@ func getUserInfo(query,selector interface{})(User,error){
 
 	return user, err
 }
-func getVideoInfo(query,selector interface{})(Video,error){
+func getVideoInfo(query, selector interface{}) (Video, error) {
 	s := mongoSession.Copy()
 	defer s.Close()
 	c := s.DB(DBName).C(ColVideo)
@@ -56,18 +56,16 @@ func getVideoInfo(query,selector interface{})(Video,error){
 
 	return user, err
 }
-func changeData(col string,query,update interface{})(error){
+func changeData(col string, query, update interface{}) error {
 	s := mongoSession.Copy()
 	defer s.Close()
 	c := s.DB(DBName).C(col)
 
-	err:=c.Update(query,update);
+	err := c.Update(query, update)
 	return err
 }
 
-
-
-func getCountInfo(query,selector interface{},col string)(int,error){
+func getCountInfo(query, selector interface{}, col string) (int, error) {
 	s := mongoSession.Copy()
 	defer s.Close()
 	c := s.DB(DBName).C(col)
@@ -76,104 +74,103 @@ func getCountInfo(query,selector interface{},col string)(int,error){
 	if selector != nil {
 		q = q.Select(selector)
 	}
-	return q.Count();
+	return q.Count()
 }
-func deleteOne(query interface{},col string)(error){
+func deleteOne(query interface{}, col string) error {
 	s := mongoSession.Copy()
 	defer s.Close()
 	c := s.DB(DBName).C(col)
-	return c.Remove(query);
+	return c.Remove(query)
 }
 
-func getVideoList(query,selector interface{},last int64,limit int)([]VideoInfo,error){
+func getVideoList(query, selector interface{}, last int64, limit int) ([]VideoInfo, error) {
 	s := mongoSession.Copy()
 	defer s.Close()
 	c := s.DB(DBName).C(ColVideo)
-	pipe:=[]bson.M{
+	pipe := []bson.M{
 		{
-			"$match":query,
+			"$match": query,
 		},
 		{
-			"$sort":bson.M{
-				"post_time":-1,
+			"$sort": bson.M{
+				"post_time": -1,
 			},
 		},
 		{
-			"$limit":limit,
+			"$limit": limit,
 		},
 	}
-	pipe=append(pipe,bson.M{
-		"$lookup":bson.M{
-			"from": ColUser,
-			"localField": "author_id",
+	pipe = append(pipe, bson.M{
+		"$lookup": bson.M{
+			"from":         ColUser,
+			"localField":   "author_id",
 			"foreignField": "id",
-			"as":"author",
+			"as":           "author",
 		},
 	})
 
 	if selector != nil {
-		pipe=append(pipe,bson.M{
-			"$project":selector,
+		pipe = append(pipe, bson.M{
+			"$project": selector,
 		})
 	}
 
-	var list []VideoInfo;
-	flag:=false;
-	err:=c.Pipe(pipe).All(&list);
-	for i:=0;i<len(list);i++{
-		flag=false;
-		list[i].Author,_=getUserInfo(bson.M{
-			"_id":list[i].AuID,
-		},nil);
-		for j:=0;j<len(list[i].Author.FavVideo);j++{
-			if list[i].Author.FavVideo[j]==list[i].VideoID{
-				flag=true;
-				break;
+	var list []VideoInfo
+	flag := false
+	err := c.Pipe(pipe).All(&list)
+	for i := 0; i < len(list); i++ {
+		flag = false
+		list[i].Author, _ = getUserInfo(bson.M{
+			"_id": list[i].AuID,
+		}, nil)
+		for j := 0; j < len(list[i].Author.FavVideo); j++ {
+			if list[i].Author.FavVideo[j] == list[i].VideoID {
+				flag = true
+				break
 			}
 		}
-		list[i].IsFav=flag;
+		list[i].IsFav = flag
 	}
-	return list,err;
+	return list, err
 }
-func getAssList(query,selector interface{})([]AssessmentInfo,error){
+func getAssList(query, selector interface{}) ([]AssessmentInfo, error) {
 	s := mongoSession.Copy()
 	defer s.Close()
 	c := s.DB(DBName).C(ColAssessment)
-	pipe:=[]bson.M{
+	pipe := []bson.M{
 		{
-			"$match":query,
+			"$match": query,
 		},
 	}
-	pipe=append(pipe,bson.M{
-		"$lookup":bson.M{
-			"from": ColUser,
-			"localField": "author_id",
+	pipe = append(pipe, bson.M{
+		"$lookup": bson.M{
+			"from":         ColUser,
+			"localField":   "author_id",
 			"foreignField": "id",
-			"as":"user",
+			"as":           "user",
 		},
 	})
 
 	if selector != nil {
-		pipe=append(pipe,bson.M{
-			"$project":selector,
+		pipe = append(pipe, bson.M{
+			"$project": selector,
 		})
 	}
-	var list []AssessmentInfo;
-	err:=c.Pipe(pipe).All(&list);
-	for i:=0;i<len(list);i++{
-		_,month,day:=time.Unix(list[i].Time,0).Date();
-		list[i].User,_=getUserInfo(bson.M{
-			"id":list[i].AuthorID,
-		},nil);
-		list[i].Date=fmt.Sprintf("%d-%d",month,day);
+	var list []AssessmentInfo
+	err := c.Pipe(pipe).All(&list)
+	for i := 0; i < len(list); i++ {
+		_, month, day := time.Unix(list[i].Time, 0).Date()
+		list[i].User, _ = getUserInfo(bson.M{
+			"id": list[i].AuthorID,
+		}, nil)
+		list[i].Date = fmt.Sprintf("%d-%d", month, day)
 	}
-	return list,err;
+	return list, err
 }
 
-func insertData(query interface{},col string)error{
+func insertData(query interface{}, col string) error {
 	s := mongoSession.Copy()
 	defer s.Close()
 	c := s.DB(DBName).C(col)
-	return c.Insert(query);
+	return c.Insert(query)
 }
-

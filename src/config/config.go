@@ -7,24 +7,24 @@ import (
 	"github.com/json-iterator/go"
 )
 
-type Mongodb struct{
+type Mongodb struct {
 	DBname string ` json:"name" `
-	Host string   ` json:"host" `
-	Port string   ` json:"port" `
-	User string   ` json:"user" `
-	Pwd  string   ` json:"pwd"  `
+	Host   string ` json:"host" `
+	Port   string ` json:"port" `
+	User   string ` json:"user" `
+	Pwd    string ` json:"pwd"  `
 }
-type Config struct{
-	Mongo Mongodb   `json:"mongo"`
-	JWTToken string `json:"jwtToken"`
-	SavePath string `json:"save path"`
+type Config struct {
+	Mongo    Mongodb `json:"mongo"`
+	JWTToken string  `json:"jwtToken"`
+	SavePath string  `json:"save path"`
 }
 
 var (
-	GlobalConfig *Config;
+	GlobalConfig *Config
 )
 
-func init(){
+func init() {
 	configFile := "config.json"
 	data, err := ioutil.ReadFile(configFile)
 
